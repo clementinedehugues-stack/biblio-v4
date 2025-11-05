@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // Permet l'accès depuis le réseau local
-    port: 5173,
+    port: 5174,
     // Optional dev proxy to bypass CORS while keeping API_URL=/api locally
     proxy: {
       '/api': {
