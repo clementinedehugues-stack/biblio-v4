@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -27,27 +28,38 @@ def create_app() -> FastAPI:
     """
     application = FastAPI(title="Bibliotheque API", version="0.1.0")
 
-    # CORS: default allowlist + optional extension via env.
-    # Defaults include local dev and the Render-hosted frontend.
-    origins = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "https://biblio-frontend.onrender.com",
-    ]
+    # CORS configuration
+    # 1) Try reading Render env CORS_ALLOW_ORIGINS as JSON (e.g., ["http://...","..."])
+    # 2) Fallback to defaults for local dev and the hosted frontend
+    cors_env = os.getenv("CORS_ALLOW_ORIGINS")
+    if cors_env:
+        try:
+            parsed = json.loads(cors_env)
+            if isinstance(parsed, list):
+                origins = [str(o).strip() for o in parsed if str(o).strip()]
+            else:
+                # If it's a single string or another type, use as a single origin
+                origins = [str(parsed).strip()]
+        except json.JSONDecodeError:
+            # Accept comma-separated values as a convenience fallback
+            if "," in cors_env:
+                origins = [o.strip() for o in cors_env.split(",") if o.strip()]
+            else:
+                origins = [cors_env.strip()]
+    else:
+        origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://biblio-frontend.onrender.com",
+        ]
 
-    # Optional extra origins from env (comma-separated)
-    extra_origins = os.getenv("CORS_ALLOW_ORIGINS")
-    if extra_origins:
-        origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+    # Optionally allow regex
+    origin_regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX")
 
     # De-duplicate while preserving order
     origins = list(dict.fromkeys(origins))
 
-    origin_regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX")
-
-    # Simple console log to help verify CORS config at startup
+    # Console log to help verify CORS config at startup
     print("[CORS] Enabled with:")
     print(f"        allow_origins={origins}")
     if origin_regex:
@@ -61,6 +73,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Expose allowed origins for diagnostics routes
+    application.state.allowed_origins = origins
     application.include_router(auth.router)
     application.include_router(books.router)
     application.include_router(documents.router)
@@ -87,3 +101,8 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+# Optional diagnostic route
+@app.get("/ping")
+def ping():
+    return {"message": "pong", "CORS": getattr(app.state, "allowed_origins", [])}
