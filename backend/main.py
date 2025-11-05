@@ -32,6 +32,8 @@ def create_app() -> FastAPI:
     # 1) Try reading Render env CORS_ALLOW_ORIGINS as JSON (e.g., ["http://...","..."])
     # 2) Fallback to defaults for local dev and the hosted frontend
     cors_env = os.getenv("CORS_ALLOW_ORIGINS")
+    # Always ensure our known frontend origin is present
+    default_frontend = os.getenv("FRONTEND_ORIGIN", "https://bibliotheque-2u2m.onrender.com").strip()
     if cors_env:
         try:
             parsed = json.loads(cors_env)
@@ -52,14 +54,18 @@ def create_app() -> FastAPI:
             "http://localhost:5174",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:5174",
-            "https://bibliotheque-2u2m.onrender.com",
+            default_frontend,
         ]
 
     # Optionally allow regex
     origin_regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX")
 
-    # De-duplicate while preserving order
-    origins = list(dict.fromkeys(origins))
+    # Union with default_frontend to avoid misconfig from env
+    if default_frontend and default_frontend not in origins:
+        origins.append(default_frontend)
+
+    # De-duplicate while preserving order and drop empties
+    origins = [o for o in dict.fromkeys(origins) if o]
 
     # Console log to help verify CORS config at startup
     print("[CORS] Enabled with:")
