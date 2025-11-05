@@ -27,12 +27,14 @@ def create_app() -> FastAPI:
     """
     application = FastAPI(title="Bibliotheque API", version="0.1.0")
 
-    # CORS: keep a tight allowlist and allow operators to extend it via env.
+    # CORS: default allowlist + optional extension via env.
+    # Defaults include local dev and the Render-hosted frontend.
     origins = [
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
+        "https://biblio-frontend.onrender.com",
     ]
 
     # Optional extra origins from env (comma-separated)
@@ -40,7 +42,16 @@ def create_app() -> FastAPI:
     if extra_origins:
         origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
 
+    # De-duplicate while preserving order
+    origins = list(dict.fromkeys(origins))
+
     origin_regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX")
+
+    # Simple console log to help verify CORS config at startup
+    print("[CORS] Enabled with:")
+    print(f"        allow_origins={origins}")
+    if origin_regex:
+        print(f"        allow_origin_regex={origin_regex}")
 
     application.add_middleware(
         CORSMiddleware,

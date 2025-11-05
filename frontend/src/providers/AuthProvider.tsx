@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '@/services/api';
+import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext, type AuthContextType, type AuthToken, type LoginCredentials, type User } from '@/contexts/AuthContext';
-import { isAxiosError, type AxiosError } from 'axios';
+import { toast } from 'sonner';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -15,18 +15,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
 
-  const { data: user, error } = useQuery<User, AxiosError>({
+  const { data: user, error } = useQuery<User, Error>({
     queryKey: ['user'],
     queryFn: async () => {
-      const { data } = await api.get('/users/me');
-      return data;
+      return await apiFetch<User>('/users/me');
     },
     enabled: !!token,
     retry: false,
   });
 
   useEffect(() => {
-    if (error && isAxiosError(error) && error.response?.status === 401) {
+    // If token invalid/expired; force logout cleanup
+    if (error && /401/.test(error.message)) {
       // Token is invalid/expired; force logout cleanup
       localStorage.removeItem('token');
       setToken(null);
@@ -37,9 +37,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useMutation<AuthToken, Error, LoginCredentials>({
     mutationFn: async (credentials) => {
-      const { data } = await api.post('/auth/login', {
-        username: credentials.username,
-        password: credentials.password,
+      const data = await apiFetch<AuthToken>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: credentials.username,
+          password: credentials.password,
+        }),
       });
       localStorage.setItem('token', data.access_token);
       setToken(data.access_token);
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     },
     onError: (error) => {
       console.error('Login failed:', error);
+      toast.error('Login failed. Please check your credentials.');
     },
   });
 

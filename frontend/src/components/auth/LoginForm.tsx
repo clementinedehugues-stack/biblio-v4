@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
-import { isAxiosError } from 'axios';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,12 +54,11 @@ export function LoginForm() {
 
   const renderError = () => {
     if (!auth.login.isError || !auth.login.error) return null;
-    const err = auth.login.error;
-    if (isAxiosError(err)) {
-      const status = err.response?.status;
-      if (status === 401) {
-        return <p className="text-sm text-red-500">{t('invalid_credentials')}</p>;
-      }
+    const msg = auth.login.error.message || '';
+    if (/401/.test(msg) || /invalid/i.test(msg)) {
+      return <p className="text-sm text-red-500">{t('invalid_credentials')}</p>;
+    }
+    if (/fetch|network|failed/i.test(msg)) {
       return <p className="text-sm text-red-500">{t('server_unreachable')}</p>;
     }
     return <p className="text-sm text-red-500">{t('login_failed')}</p>;

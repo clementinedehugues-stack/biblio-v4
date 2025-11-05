@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search as SearchIcon, Star as StarIcon } from "lucide-react";
-import api from "@/services/api";
+import { apiFetch } from "@/lib/api";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslation } from 'react-i18next';
 import { BookCard, type BookCardBook } from '@/components/user/BookCard';
@@ -69,9 +69,10 @@ export default function BooksPage() {
     queryKey: ['books', { searchQuery, language, category }],
     queryFn: async () => {
       if (searchQuery) {
-        const { data } = await api.get(`/documents/search`, { params: { query: searchQuery } });
+        const params = new URLSearchParams({ query: searchQuery });
+        const data = await apiFetch<Book[]>(`/documents/search?${params.toString()}`);
         // When searching full-text, optionally filter language/category client-side
-        let out = (data as Book[]).filter(b => ((!language || b.language === language) && (!category || b.category === category)));
+        let out = data.filter(b => ((!language || b.language === language) && (!category || b.category === category)));
         if (onlyFavs) out = out.filter(b => isFavorite(b.id));
         return out;
       }

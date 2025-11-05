@@ -7,7 +7,7 @@ export default function AdminRoles() {
   const queryClient = useQueryClient();
   const { data } = useQuery<AdminRole[]>({ queryKey: ['adminRoles'], queryFn: getAdminRoles });
   const mutation = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) => updateAdminRole(id, role),
+    mutationFn: ({ id, role }: { id: string; role: string }) => updateAdminRole(id, role),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['adminRoles'] })
   });
   return (

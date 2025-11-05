@@ -1,12 +1,12 @@
 // Services for admin roles management
-import api from './api';
+import { apiFetch } from '@/lib/api';
 
 export type AdminRole = { id: string; user: string; role: string };
 
 type AdminRoleAPIResponse = { id: string; username: string; full_name: string; role: string };
 
 export async function getAdminRoles(): Promise<AdminRole[]> {
-  const { data }: { data: AdminRoleAPIResponse[] } = await api.get('/admin/roles/');
+  const data = await apiFetch<AdminRoleAPIResponse[]>('/admin/roles/');
   return data.map((role) => ({
     id: role.id,
     user: role.username,
@@ -15,7 +15,10 @@ export async function getAdminRoles(): Promise<AdminRole[]> {
 }
 
 export async function updateAdminRole(id: string, newRole: string): Promise<AdminRole> {
-  const { data }: { data: AdminRoleAPIResponse } = await api.put(`/admin/roles/${id}/`, { role: newRole });
+  const data = await apiFetch<AdminRoleAPIResponse>(`/admin/roles/${id}/`, {
+    method: 'PUT',
+    body: JSON.stringify({ role: newRole }),
+  });
   return {
     id: data.id,
     user: data.username,

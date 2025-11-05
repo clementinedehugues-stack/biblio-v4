@@ -1,5 +1,5 @@
 // Services for admin dashboard statistics
-import api from './api';
+import { apiFetch } from '@/lib/api';
 
 // Types for the API responses
 export type TopBooksData = {
@@ -20,8 +20,11 @@ export type ActiveUsersData = {
 
 export type Report = { id: number; type: string; target: string };
 
+type TopBooksApi = { labels: string[]; data: number[] };
+type ActiveUsersApi = { labels: string[]; data: number[] };
+
 export async function getTopBooks(): Promise<TopBooksData> {
-  const { data } = await api.get('/admin/stats/top-books/');
+  const data = await apiFetch<TopBooksApi>('/admin/stats/top-books/');
 
   return {
     chartData: {
@@ -37,7 +40,7 @@ export async function getTopBooks(): Promise<TopBooksData> {
 }
 
 export async function getActiveUsers(): Promise<ActiveUsersData> {
-  const { data } = await api.get('/admin/stats/active-users/');
+  const data = await apiFetch<ActiveUsersApi>('/admin/stats/active-users/');
 
   return {
     chartData: {
@@ -55,6 +58,6 @@ export async function getActiveUsers(): Promise<ActiveUsersData> {
 }
 
 export async function getRecentReports(): Promise<Report[]> {
-  const { data } = await api.get('/admin/stats/recent-reports/');
+  const data = await apiFetch<{ reports: Report[] }>('/admin/stats/recent-reports/');
   return data.reports;
 }

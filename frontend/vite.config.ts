@@ -7,6 +7,16 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Permet l'accès depuis le réseau local
     port: 5173,
+    // Optional dev proxy to bypass CORS while keeping API_URL=/api locally
+    proxy: {
+      '/api': {
+        target: 'https://biblio-h6ji.onrender.com',
+        changeOrigin: true,
+        secure: true,
+        // Remove /api prefix when forwarding
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
   preview: {
     host: '0.0.0.0', // Permet l'accès au build via le réseau local

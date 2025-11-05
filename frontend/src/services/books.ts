@@ -1,4 +1,4 @@
-import api from './api';
+import { apiFetch, apiUpload } from '@/lib/api';
 
 export type Language = 'FR' | 'EN';
 
@@ -36,33 +36,39 @@ export interface DocumentStreamTokenResponse {
 }
 
 export const getBooks = async (params?: { category?: string; author?: string; language?: Language }) => {
-  const { data } = await api.get<BookRead[]>('/books/', { params });
-  return data;
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set('category', params.category);
+  if (params?.author) qs.set('author', params.author);
+  if (params?.language) qs.set('language', params.language);
+  const query = qs.toString();
+  return await apiFetch<BookRead[]>(`/books/${query ? `?${query}` : ''}`);
 };
 
 export const getBook = async (id: string) => {
-  const { data } = await api.get<BookRead>(`/books/${id}`);
-  return data;
+  return await apiFetch<BookRead>(`/books/${id}`);
 };
 
 export const createBook = async (payload: BookCreatePayload) => {
-  const { data } = await api.post<BookRead>('/books/', payload);
-  return data;
+  return await apiFetch<BookRead>('/books/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 };
 
 export const updateBook = async (id: string, patch: Partial<BookCreatePayload>) => {
-  const { data } = await api.put<BookRead>(`/books/${id}`, patch);
-  return data;
+  return await apiFetch<BookRead>(`/books/${id}` , {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
 };
 
 export const deleteBook = async (id: string) => {
-  await api.delete(`/books/${id}`);
+  await apiFetch(`/books/${id}`, { method: 'DELETE' });
   return { id };
 };
 
 export const requestBookStreamToken = async (id: string) => {
-  const { data } = await api.post<DocumentStreamTokenResponse>(`/books/${id}/stream-token`);
-  return data;
+  return await apiFetch<DocumentStreamTokenResponse>(`/books/${id}/stream-token`, { method: 'POST' });
 };
 
 export const createBookWithFile = async (payload: {
@@ -80,18 +86,5 @@ export const createBookWithFile = async (payload: {
   form.append('category', payload.category);
   form.append('language', payload.language);
   form.append('file', payload.file);
-  const { data } = await api.post<BookRead>('/books/create_with_file', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    // Narrow type compatible with AxiosProgressEvent shape
-    onUploadProgress: (e: { total?: number | null; loaded?: number | null }) => {
-      if (!opts?.onProgress) return;
-      const total = (typeof e.total === 'number' && e.total > 0) ? e.total : 0;
-      if (total > 0) {
-        const loaded = (typeof e.loaded === 'number') ? e.loaded : 0;
-        const percent = Math.round((loaded / total) * 100);
-        opts.onProgress(percent);
-      }
-    },
-  });
-  return data;
+  return await apiUpload<BookRead>('/books/create_with_file', form, { onProgress: opts?.onProgress });
 };

@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { normalizePublicUrl } from '@/lib/urls';
 import { requestBookStreamToken } from '@/services/books';
-import { getResolvedApiBaseUrl } from '@/services/api';
+import { getApiUrl } from '@/lib/api';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerSrc as unknown as string;
 
@@ -22,7 +22,7 @@ interface PdfViewerProps {
 }
 
 export function PdfViewer({ fileUrl, bookId, streamPath }: PdfViewerProps) {
-  const apiBaseUrl = useMemo(() => getResolvedApiBaseUrl(), []);
+  const apiBaseUrl = useMemo(() => getApiUrl(), []);
   const directUrl = useMemo(() => {
     if (!fileUrl) return null;
     return normalizePublicUrl(fileUrl) || fileUrl;
