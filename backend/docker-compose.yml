@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: biblio_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: biblio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: biblio_api
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/workspace/backend
+      - uploads_data:/data/uploads
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/biblio
+      JWT_SECRET_KEY: "be34d851ba9eab899e027e79bf4c61a6cc17cfeca51f01cf5f2a0a3fe39dddd7d7fc660cdf4054f303ef0ee478e21717f7f511135abca601855f05c149bc9e7b"
+      JWT_ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      UPLOAD_DIR: "/data/uploads"
+      GENERATE_THUMBNAILS_ON_UPLOAD: "true"
+      # Optionally set the public base URL used in absolute file links (e.g., when accessing from LAN)
+      # Example: http://192.168.1.42:8000
+      PUBLIC_API_BASE_URL: "${PUBLIC_API_BASE_URL:-}"
+      # Additional comma separated exact origins and optional regex for LAN dev usage.
+      CORS_ALLOW_ORIGINS: "${CORS_ALLOW_ORIGINS:-}"
+      CORS_ALLOW_ORIGIN_REGEX: "${CORS_ALLOW_ORIGIN_REGEX:-}"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  uploads_data:
