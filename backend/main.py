@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -81,6 +81,39 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    @application.middleware("http")
+    async def ensure_cors_headers(request: Request, call_next):
+        """
+        Safety-net CORS middleware:
+        - Guarantees Access-Control-Allow-* headers even if upstream/proxy swallows preflight
+        - Handles bare OPTIONS with a 204 when routed before CORSMiddleware
+        """
+        origin = request.headers.get("origin", "")
+        is_allowed = origin and (origin in application.state.allowed_origins)
+
+        # Preflight short-circuit (in case proxy doesn't pass through to CORSMiddleware)
+        if request.method == "OPTIONS":
+            resp = Response(status_code=204)
+            if is_allowed:
+                resp.headers["Access-Control-Allow-Origin"] = origin
+                resp.headers["Vary"] = "Origin"
+                resp.headers["Access-Control-Allow-Credentials"] = "true"
+            # Echo requested headers/methods when present
+            req_headers = request.headers.get("access-control-request-headers")
+            req_method = request.headers.get("access-control-request-method")
+            resp.headers["Access-Control-Allow-Headers"] = req_headers or "*"
+            resp.headers["Access-Control-Allow-Methods"] = req_method or "*"
+            return resp
+
+        response = await call_next(request)
+        if is_allowed:
+            # Add ACAO if missing
+            if "access-control-allow-origin" not in {k.lower(): v for k, v in response.headers.items()}:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Vary"] = "Origin"
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
     # Expose allowed origins for diagnostics routes
     application.state.allowed_origins = origins
     application.include_router(auth.router)
