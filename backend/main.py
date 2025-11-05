@@ -49,8 +49,10 @@ def create_app() -> FastAPI:
     else:
         origins = [
             "http://localhost:5173",
+            "http://localhost:5174",
             "http://127.0.0.1:5173",
-            "https://biblio-frontend.onrender.com",
+            "http://127.0.0.1:5174",
+            "https://bibliotheque-2u2m.onrender.com",
         ]
 
     # Optionally allow regex
