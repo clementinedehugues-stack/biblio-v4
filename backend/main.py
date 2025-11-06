@@ -14,7 +14,7 @@ import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import admin_users, admin_stats, admin_logs, admin_notifications, admin_roles, admin_support, auth, books, documents, user_self, categories, comments
+from .routes import admin_users, admin_stats, admin_logs, admin_notifications, admin_roles, admin_support, admin_database, auth, books, documents, user_self, categories, comments
 
 
 def create_app() -> FastAPI:
@@ -92,6 +92,7 @@ def create_app() -> FastAPI:
     application.include_router(admin_notifications.router)
     application.include_router(admin_roles.router)
     application.include_router(admin_support.router)
+        application.include_router(admin_database.router)
     application.include_router(categories.router)
     application.include_router(comments.router)
     application.include_router(user_self.router)
