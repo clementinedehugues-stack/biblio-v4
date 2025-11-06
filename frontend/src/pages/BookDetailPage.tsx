@@ -1,9 +1,8 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getBook, getBooks } from '@/services/books';
 import UserLayout from '@/components/layout/UserLayout';
 import { PdfViewer } from '@/components/common/PdfViewer';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addComment, listComments, type CommentRead } from '@/services/comments';
@@ -15,6 +14,7 @@ import { useShelves } from '@/hooks/useShelves';
 
 export default function BookDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { getReadingStatus, setReadingStatus } = useReadingStatus();
   const { shelves, addBookToShelf, removeBookFromShelf, getShelvesForBook } = useShelves();
   const [showShelfMenu, setShowShelfMenu] = useState(false);
@@ -24,23 +24,29 @@ export default function BookDetailPage() {
     queryKey: ['book', id],
     queryFn: () => getBook(id as string),
     enabled: !!id,
+    retry: false, // avoid spamming 404s when book does not exist
+    refetchOnWindowFocus: false,
   });
 
   type RelatedBook = { id: string; title: string; author: string };
   const { data: related = [] } = useQuery<RelatedBook[]>({
     queryKey: ['related', id],
     queryFn: async () => {
-      const b = await getBook(id as string);
-      const list = await getBooks({ category: b.category, author: undefined, language: undefined });
-      return (list as RelatedBook[]).filter((x) => x.id !== b.id).slice(0, 6);
+      if (!book) return [] as RelatedBook[];
+      const list = await getBooks({ category: book.category, author: undefined, language: undefined });
+      return (list as RelatedBook[]).filter((x) => x.id !== book.id).slice(0, 6);
     },
-    enabled: !!id,
+    enabled: !!id && !!book,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const { data: comments = [] } = useQuery<CommentRead[]>({
     queryKey: ['comments', id],
     queryFn: () => listComments(id as string),
-    enabled: !!id,
+    enabled: !!id && !!book,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const [rating, setRating] = useState<number | ''>('');
@@ -55,7 +61,14 @@ export default function BookDetailPage() {
     <UserLayout>
       <div className="p-4 sm:p-6 md:p-8">
         {isLoading && <div className="text-center py-10 text-muted-foreground">{t('book.loading')}</div>}
-        {isError && <div className="text-center py-10 text-destructive bg-destructive/10 p-4 rounded-lg">{t('book.error')}</div>}
+        {isError && (
+          <div className="text-center py-10 text-destructive bg-destructive/10 p-4 rounded-lg space-y-3">
+            <div>{t('book.error') || 'Livre introuvable ou supprimé.'}</div>
+            <div>
+              <Button onClick={() => navigate('/')} variant="outline">{t('back_home') || 'Retour à l\'accueil'}</Button>
+            </div>
+          </div>
+        )}
         {book && (
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Header */}
