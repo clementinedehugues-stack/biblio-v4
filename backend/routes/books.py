@@ -252,21 +252,27 @@ async def stream_book_document(
         from ..services import cloudinary_service
         import httpx
         
-        cloudinary_url = cloudinary_service.get_pdf_url(book.cloudinary_public_id)
-        
-        async def _iter_cloudinary() -> AsyncIterator[bytes]:
-            async with httpx.AsyncClient() as client:
-                async with client.stream("GET", cloudinary_url) as response:
-                    response.raise_for_status()
-                    async for chunk in response.aiter_bytes(chunk_size=_UPLOAD_CHUNK_SIZE):
-                        yield chunk
-        
-        return StreamingResponse(_iter_cloudinary(), media_type="application/pdf")
+        try:
+            cloudinary_url = cloudinary_service.get_pdf_url(book.cloudinary_public_id)
+            
+            async def _iter_cloudinary() -> AsyncIterator[bytes]:
+                async with httpx.AsyncClient() as client:
+                    async with client.stream("GET", cloudinary_url) as response:
+                        response.raise_for_status()
+                        async for chunk in response.aiter_bytes(chunk_size=_UPLOAD_CHUNK_SIZE):
+                            yield chunk
+            
+            return StreamingResponse(_iter_cloudinary(), media_type="application/pdf")
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail=f"Failed to stream from Cloudinary: {str(exc)}"
+            ) from exc
     
-    # Fallback to local storage (for legacy books)
+    # Fallback to local storage (for legacy books without Cloudinary)
     document = await documents_service.get_primary_document(session, book_id)
     if document is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No document available")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No document available for this book")
 
     try:
         path = documents_service.resolve_document_path(document.filename)
@@ -274,7 +280,10 @@ async def stream_book_document(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Document path invalid") from exc
 
     if not path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found on storage")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Document file not found on local storage (uploaded before Cloudinary migration)"
+        )
 
     def _iter_file() -> Iterator[bytes]:
         with path.open("rb") as handle:

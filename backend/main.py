@@ -102,6 +102,10 @@ def create_app() -> FastAPI:
     default_upload_dir = (Path(__file__).resolve().parents[1] / "uploads").resolve()
     upload_dir = Path(os.getenv("UPLOAD_DIR", str(default_upload_dir)))
     thumbnails_dir = upload_dir / "thumbnails"
+    
+    # Create thumbnails directory if it doesn't exist (required for StaticFiles)
+    thumbnails_dir.mkdir(parents=True, exist_ok=True)
+    
     application.mount(
         "/uploads/thumbnails",
         StaticFiles(directory=thumbnails_dir, check_dir=False),
