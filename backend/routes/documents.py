@@ -84,11 +84,11 @@ async def upload_document(
         file_obj = BytesIO(file_content)
         
         # Upload PDF to Cloudinary
-        pdf_public_id = await cloudinary_service.upload_pdf(file_obj, str(book_id))
+        pdf_public_id = cloudinary_service.upload_pdf(file_obj, str(book_id))
         
         # Upload thumbnail to Cloudinary
         file_obj.seek(0)  # Reset file pointer
-        thumbnail_public_id = await cloudinary_service.upload_thumbnail(file_obj, str(book_id))
+        thumbnail_public_id = cloudinary_service.upload_thumbnail(file_obj, str(book_id))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -131,7 +131,6 @@ async def upload_document(
             # Update book with Cloudinary IDs
             book.cloudinary_public_id = pdf_public_id
             if thumbnail_public_id:
-                from ..services import cloudinary_service
                 book.cloudinary_thumbnail_id = thumbnail_public_id
                 book.thumbnail_path = cloudinary_service.get_thumbnail_url(thumbnail_public_id)
             
