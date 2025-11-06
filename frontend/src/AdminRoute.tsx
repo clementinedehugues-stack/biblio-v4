@@ -8,10 +8,10 @@ export function AdminRoute() {
         return <Navigate to="/login" />;
     }
 
-    if (user && (user.role === 'admin' || user.role === 'moderator')) {
+    if (user && user.role === 'admin') {
         return <Outlet />;
     }
 
-    // Redirect to home if not admin/moderator, or while user is loading
+    // Redirect to home if not admin
     return <Navigate to="/" />;
 }
