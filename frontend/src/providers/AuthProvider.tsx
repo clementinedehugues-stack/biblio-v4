@@ -46,8 +46,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       localStorage.setItem('token', data.access_token);
       setToken(data.access_token);
-      await queryClient.invalidateQueries({ queryKey: ['user'] });
-      navigate('/');
+      
+      // Wait for user data to be fetched before redirecting
+      const userData = await apiFetch<User>('/users/me');
+      queryClient.setQueryData(['user'], userData);
+      
+      // Navigate based on role
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else if (userData.role === 'moderator') {
+        navigate('/moderator');
+      } else {
+        navigate('/');
+      }
+      
       return data;
     },
     onError: (error) => {
