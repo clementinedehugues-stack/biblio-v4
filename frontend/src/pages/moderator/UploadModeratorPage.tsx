@@ -19,7 +19,6 @@ export default function UploadModeratorPage() {
   const [category, setCategory] = useState('');
   const [language, setLanguage] = useState<Language>('EN');
   const [description, setDescription] = useState('');
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   const uploadMutation = useMutation({
     mutationFn: (payload: {
@@ -29,7 +28,7 @@ export default function UploadModeratorPage() {
       category: string;
       language: Language;
       file: File;
-    }) => createBookWithFile(payload, { onProgress: setUploadProgress }),
+    }) => createBookWithFile(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       // Reset form
@@ -39,7 +38,6 @@ export default function UploadModeratorPage() {
       setCategory('');
       setLanguage('EN');
       setDescription('');
-      setUploadProgress(0);
       // Reset file input
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
