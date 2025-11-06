@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search as SearchIcon, Star as StarIcon } from "lucide-react";
+import { Search as SearchIcon, Star as StarIcon, Grid3x3, List } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,7 @@ export default function BooksPage() {
   const { isFavorite } = useFavorites();
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [density, setDensity] = useState<'comfortable'|'compact'>((localStorage.getItem('ui.density') as 'comfortable'|'compact') || 'comfortable');
+  const [viewMode, setViewMode] = useState<'grid'|'list'>((localStorage.getItem('ui.viewMode') as 'grid'|'list') || 'grid');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
@@ -62,6 +63,9 @@ export default function BooksPage() {
   useEffect(() => {
     localStorage.setItem('ui.density', density);
   }, [density]);
+  useEffect(() => {
+    localStorage.setItem('ui.viewMode', viewMode);
+  }, [viewMode]);
   // Reset pagination on filters
   useEffect(() => { setPage(1); }, [searchQuery, language, category, onlyFavs]);
 
@@ -167,23 +171,47 @@ export default function BooksPage() {
                 <StarIcon className={`h-4 w-4 ${onlyFavs ? 'fill-current' : ''}`} />
                 {t('favorites')}
               </button>
-              <div className="ml-auto flex items-center gap-1 p-1 bg-secondary rounded-full">
-                <button
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    density === 'comfortable' ? 'bg-background shadow-sm' : 'text-muted-foreground'
-                  }`}
-                  onClick={() => setDensity('comfortable')}
-                >
-                  {t('books.comfortable')}
-                </button>
-                <button
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    density === 'compact' ? 'bg-background shadow-sm' : 'text-muted-foreground'
-                  }`}
-                  onClick={() => setDensity('compact')}
-                >
-                  {t('books.compact')}
-                </button>
+              <div className="ml-auto flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex items-center gap-1 p-1 bg-secondary rounded-full">
+                  <button
+                    className={`p-2 rounded-full transition-colors ${
+                      viewMode === 'grid' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setViewMode('grid')}
+                    title={t('books.grid_view')}
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                  </button>
+                  <button
+                    className={`p-2 rounded-full transition-colors ${
+                      viewMode === 'list' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setViewMode('list')}
+                    title={t('books.list_view')}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                </div>
+                {/* Density Toggle */}
+                <div className="flex items-center gap-1 p-1 bg-secondary rounded-full">
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      density === 'comfortable' ? 'bg-background shadow-sm' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setDensity('comfortable')}
+                  >
+                    {t('books.comfortable')}
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      density === 'compact' ? 'bg-background shadow-sm' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setDensity('compact')}
+                  >
+                    {t('books.compact')}
+                  </button>
+                </div>
               </div>
             </div>
             {categories.length > 0 && (
@@ -234,11 +262,19 @@ export default function BooksPage() {
         )}
         {!isLoading && books && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {(visibleBooks as BookCardBook[]).map((b, idx) => (
-                <BookCard key={`${b.id}-${idx}`} book={b} index={idx} density={density} />
-              ))}
-            </div>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {(visibleBooks as BookCardBook[]).map((b, idx) => (
+                  <BookCard key={`${b.id}-${idx}`} book={b} index={idx} density={density} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(visibleBooks as BookCardBook[]).map((b, idx) => (
+                  <BookCard key={`${b.id}-${idx}`} book={b} index={idx} density={density} viewMode="list" />
+                ))}
+              </div>
+            )}
             {books.length === 0 && (
               <div className="col-span-full text-muted-foreground text-center py-10">
                 {t('none_found')}

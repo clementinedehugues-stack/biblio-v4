@@ -121,6 +121,8 @@
   "books.show_more": "Show more",
   "books.comfortable": "Comfortable",
   "books.compact": "Compact",
+  "books.grid_view": "Grid view",
+  "books.list_view": "List view",
 
   "book.read_now": "Read Now",
   "book.document_unavailable": "Document currently unavailable.",

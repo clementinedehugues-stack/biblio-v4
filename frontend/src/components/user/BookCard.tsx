@@ -20,6 +20,7 @@ interface BookCardProps {
   book: BookCardBook;
   index?: number;
   density?: 'comfortable' | 'compact';
+  viewMode?: 'grid' | 'list';
 }
 
 const PlaceholderCover = ({ title }: { title: string }) => {
@@ -34,18 +35,75 @@ const PlaceholderCover = ({ title }: { title: string }) => {
   );
 };
 
-function BookCardBase({ book, index = 0, density = 'comfortable' }: BookCardProps) {
+function BookCardBase({ book, index = 0, density = 'comfortable', viewMode = 'grid' }: BookCardProps) {
   const { isFavorite, toggle } = useFavorites();
   const fav = isFavorite(book.id);
-  // const { t } = useTranslation();
-  // const { user } = useAuth();
-  // const reading = useReadingProgress(user?.id);
-  // const progress = (() => {
-  //   const p = reading.get(book.id);
-  //   if (!p || !p.pages || !p.page) return 0;
-  //   return Math.max(0, Math.min(100, Math.round((p.page / p.pages) * 100)));
-  // })();
+  
+  // List view layout
+  if (viewMode === 'list') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: Math.min(0.05 * (index % 10), 0.3) }}
+        className="group rounded-xl border border-border bg-card/50 overflow-hidden shadow-sm hover:shadow-md hover:border-border transition-all"
+      >
+        <div className="flex gap-4 p-4">
+          {/* Thumbnail */}
+          <div className="flex-shrink-0">
+            {book.thumbnail_path || book.cover_image_url ? (
+              <img
+                src={normalizePublicUrl(book.thumbnail_path) || normalizePublicUrl(book.cover_image_url) || (book.thumbnail_path || book.cover_image_url!)}
+                alt={book.title}
+                className="h-32 w-24 object-cover rounded-lg"
+                loading="lazy"
+              />
+            ) : (
+              <div className="h-32 w-24 rounded-lg bg-gradient-to-br from-indigo-600/70 to-fuchsia-600/70 flex items-center justify-center p-2">
+                <div className="text-primary-foreground text-xs font-medium text-center line-clamp-3">{book.title}</div>
+              </div>
+            )}
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg line-clamp-2" title={book.title}>{book.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{book.author}</p>
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  {book.language && (
+                    <span className="text-xs rounded-full border border-border px-3 py-1">{book.language}</span>
+                  )}
+                  {book.category && (
+                    <span className="text-xs rounded-full border border-border px-3 py-1">{book.category}</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Favorite button */}
+              <button
+                onClick={() => toggle(book.id)}
+                className={`flex-shrink-0 rounded-full p-2 hover:bg-background/80 transition ${fav ? 'text-yellow-500' : 'text-foreground'}`}
+                aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Star className={`h-5 w-5 ${fav ? 'fill-current' : ''}`} />
+              </button>
+            </div>
+            
+            {/* Action button */}
+            <div className="mt-4">
+              <Link to={`/books/${book.id}`}>
+                <Button size="sm" className="rounded-full">Read</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
+  // Grid view layout (original)
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
