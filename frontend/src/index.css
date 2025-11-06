@@ -131,3 +131,12 @@
     transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease, fill 250ms ease, stroke 250ms ease;
   }
 }
+
+/* PDF Reader Night Mode */
+.pdf-page-night canvas {
+  filter: invert(0.9) hue-rotate(180deg);
+}
+
+.pdf-page-night .react-pdf__Page__textContent {
+  filter: invert(1) hue-rotate(180deg);
+}
