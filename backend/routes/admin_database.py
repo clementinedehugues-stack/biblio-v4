@@ -32,22 +32,23 @@ async def reset_database(
         Dictionary with deletion counts for each entity type
     """
     
-    async with session.begin():
-        # Delete comments first (foreign key to books)
-        result = await session.execute(delete(Comment))
-        comments_deleted = result.rowcount
-        
-        # Delete documents (foreign key to books)
-        result = await session.execute(delete(Document))
-        documents_deleted = result.rowcount
-        
-        # Delete books
-        result = await session.execute(delete(Book))
-        books_deleted = result.rowcount
-        
-        # Delete categories
-        result = await session.execute(delete(Category))
-        categories_deleted = result.rowcount
+    # Delete comments first (foreign key to books)
+    result = await session.execute(delete(Comment))
+    comments_deleted = result.rowcount
+    
+    # Delete documents (foreign key to books)
+    result = await session.execute(delete(Document))
+    documents_deleted = result.rowcount
+    
+    # Delete books
+    result = await session.execute(delete(Book))
+    books_deleted = result.rowcount
+    
+    # Delete categories
+    result = await session.execute(delete(Category))
+    categories_deleted = result.rowcount
+    
+    await session.commit()
     
     return {
         "message": "Database reset successful",
