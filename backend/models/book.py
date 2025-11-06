@@ -59,6 +59,9 @@ class Book(Base):
     pdf_url: Mapped[str] = mapped_column(String, nullable=False)
     # Auto-generated preview image for PDFs, stored as a URL to /uploads/thumbnails/*.jpg
     thumbnail_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Cloudinary storage IDs for persistent file storage
+    cloudinary_public_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    cloudinary_thumbnail_id: Mapped[str | None] = mapped_column(String, nullable=True)
     category: Mapped[str] = mapped_column(
         String(128),
         ForeignKey("categories.name", ondelete="RESTRICT"),

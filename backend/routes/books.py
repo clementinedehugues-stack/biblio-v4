@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Iterator, List, Optional
+from typing import AsyncIterator, Iterator, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -246,6 +246,24 @@ async def stream_book_document(
     except TokenDecodeError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from exc
 
+    # Check if book has Cloudinary storage
+    if book.cloudinary_public_id:
+        # Stream from Cloudinary
+        from ..services import cloudinary_service
+        import httpx
+        
+        cloudinary_url = cloudinary_service.get_pdf_url(book.cloudinary_public_id)
+        
+        async def _iter_cloudinary() -> AsyncIterator[bytes]:
+            async with httpx.AsyncClient() as client:
+                async with client.stream("GET", cloudinary_url) as response:
+                    response.raise_for_status()
+                    async for chunk in response.aiter_bytes(chunk_size=_UPLOAD_CHUNK_SIZE):
+                        yield chunk
+        
+        return StreamingResponse(_iter_cloudinary(), media_type="application/pdf")
+    
+    # Fallback to local storage (for legacy books)
     document = await documents_service.get_primary_document(session, book_id)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No document available")

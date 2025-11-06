@@ -19,6 +19,9 @@ class Settings:
 	jwt_algorithm: str
 	access_token_expire_minutes: int
 	document_stream_token_ttl_seconds: int
+	cloudinary_cloud_name: str
+	cloudinary_api_key: str
+	cloudinary_api_secret: str
 
 
 def _load_settings() -> Settings:
@@ -35,6 +38,13 @@ def _load_settings() -> Settings:
 	if not secret:
 		raise RuntimeError("JWT_SECRET_KEY must be set")
 
+	cloudinary_cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+	cloudinary_api_key = os.getenv("CLOUDINARY_API_KEY")
+	cloudinary_api_secret = os.getenv("CLOUDINARY_API_SECRET")
+	
+	if not all([cloudinary_cloud_name, cloudinary_api_key, cloudinary_api_secret]):
+		raise RuntimeError("CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET must be set")
+
 	return Settings(
 		database_url=raw_db_url,
 		jwt_secret_key=secret,
@@ -45,6 +55,9 @@ def _load_settings() -> Settings:
 		document_stream_token_ttl_seconds=int(
 			os.getenv("DOCUMENT_STREAM_TOKEN_TTL_SECONDS", str(5 * 60))
 		),
+		cloudinary_cloud_name=cloudinary_cloud_name,
+		cloudinary_api_key=cloudinary_api_key,
+		cloudinary_api_secret=cloudinary_api_secret,
 	)
 
 

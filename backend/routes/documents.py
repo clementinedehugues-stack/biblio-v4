@@ -69,39 +69,51 @@ async def upload_document(
     if book is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
-    upload_dir = documents_service.get_upload_dir()
-    stored_name = documents_service.generate_storage_name(book_id, file.filename or "document.pdf")
-    destination = upload_dir / stored_name
-
-    written = 0
+    # Read file into memory for Cloudinary upload
+    file_content = await file.read()
+    if len(file_content) > _MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, 
+            detail="Uploaded file exceeds size limit"
+        )
+    
+    # Upload to Cloudinary
     try:
-        with destination.open("wb") as buffer:
-            while True:
-                chunk = await file.read(_UPLOAD_CHUNK_SIZE)
-                if not chunk:
-                    break
-                written += len(chunk)
-                if written > _MAX_UPLOAD_SIZE:
-                    raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Uploaded file exceeds size limit")
-                buffer.write(chunk)
-    except HTTPException:
-        destination.unlink(missing_ok=True)
-        raise
-    except Exception as exc:  # pragma: no cover - unexpected write errors
-        destination.unlink(missing_ok=True)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to store uploaded file") from exc
+        from io import BytesIO
+        file_obj = BytesIO(file_content)
+        
+        pdf_public_id, thumbnail_public_id = await documents_service.upload_to_cloudinary(
+            file_obj,
+            book_id,
+            generate_thumbnail=True
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload to Cloudinary: {str(exc)}"
+        ) from exc
     finally:
         await file.close()
 
+    # Also save locally for text extraction (temporary)
+    upload_dir = documents_service.get_upload_dir()
+    stored_name = documents_service.generate_storage_name(book_id, file.filename or "document.pdf")
+    destination = upload_dir / stored_name
+    
     try:
+        with destination.open("wb") as buffer:
+            buffer.write(file_content)
+        
         content_text = documents_service.extract_pdf_text(destination)
-    except Exception as exc:  # pragma: no cover - unexpected parse errors
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Failed to parse PDF content"
+        ) from exc
+    finally:
+        # Clean up local file after extraction
         destination.unlink(missing_ok=True)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to parse PDF content") from exc
 
-    thumb_filename = f"{book_id}_thumb.jpg"
-    thumb_dir = documents_service.get_thumbnails_dir()
-    thumb_path = thumb_dir / thumb_filename
     base = _public_base_url(request)
 
     try:
@@ -113,16 +125,16 @@ async def upload_document(
                 content_text=content_text,
                 commit=False,
             )
-            if documents_service.thumbnails_generation_enabled():
-                try:
-                    if documents_service.generate_pdf_thumbnail(destination, thumb_path):
-                        book.thumbnail_path = f"{base}/uploads/thumbnails/{thumb_filename}"
-                        session.add(book)
-                except Exception:
-                    pass
+            
+            # Update book with Cloudinary IDs
+            book.cloudinary_public_id = pdf_public_id
+            if thumbnail_public_id:
+                from ..services import cloudinary_service
+                book.cloudinary_thumbnail_id = thumbnail_public_id
+                book.thumbnail_path = cloudinary_service.get_thumbnail_url(thumbnail_public_id)
+            
+            session.add(book)
     except Exception:
-        destination.unlink(missing_ok=True)
-        thumb_path.unlink(missing_ok=True)
         raise
 
     await session.refresh(document)

@@ -7,14 +7,16 @@ import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import BinaryIO
 
+from PIL import Image
 from pypdf import PdfReader
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
 from ..core.security import TokenDecodeError, create_access_token, safe_decode_token
-
+from . import cloudinary_service
 from ..models import Book, Document
 
 # Default to a writable project-relative uploads directory.
@@ -187,4 +189,46 @@ def verify_stream_token(token: str, *, expected_book_id: uuid.UUID) -> dict[str,
         raise TokenDecodeError("Token scope mismatch")
     if payload.get("sub") != str(expected_book_id):
         raise TokenDecodeError("Token subject mismatch")
+    return payload
+
+
+async def upload_to_cloudinary(
+    file: BinaryIO,
+    book_id: uuid.UUID,
+    generate_thumbnail: bool = True,
+) -> tuple[str, str | None]:
+    """
+    Upload PDF to Cloudinary and optionally generate thumbnail.
+    
+    Args:
+        file: Binary file object containing the PDF
+        book_id: UUID of the book
+        generate_thumbnail: Whether to generate and upload thumbnail
+        
+    Returns:
+        Tuple of (cloudinary_public_id, thumbnail_public_id or None)
+    """
+    # Upload PDF
+    pdf_public_id = cloudinary_service.upload_pdf(file, str(book_id))
+    
+    thumbnail_public_id = None
+    if generate_thumbnail:
+        try:
+            # Reset file pointer
+            file.seek(0)
+            
+            # Generate thumbnail from first page
+            from pdf2image import convert_from_bytes
+            images = convert_from_bytes(file.read(), first_page=1, last_page=1, size=512)
+            
+            if images:
+                img = images[0]
+                # Upload thumbnail to Cloudinary
+                thumbnail_public_id = cloudinary_service.upload_thumbnail(img, str(book_id))
+        except Exception:
+            # Thumbnail generation is optional, don't fail the upload
+            pass
+    
+    return pdf_public_id, thumbnail_public_id
+
     return payload
