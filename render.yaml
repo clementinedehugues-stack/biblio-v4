@@ -11,3 +11,16 @@ services:
         sync: false
       - key: FRONTEND_ORIGIN
         value: https://bibliotheque-2u2m.onrender.com
+
+  - type: web
+    name: biblio-frontend
+    env: static
+    buildCommand: bash -lc "cd frontend && npm ci && npm run build"
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://biblio-h6ji.onrender.com
