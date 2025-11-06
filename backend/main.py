@@ -4,17 +4,15 @@ FastAPI application factory and configuration.
 This module creates and configures the main FastAPI application with:
 - CORS middleware configuration
 - API route registration
-- Static file serving for thumbnails
+- Cloudinary integration for file storage
 """
 
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import json
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from .routes import admin_users, admin_stats, admin_logs, admin_notifications, admin_roles, admin_support, auth, books, documents, user_self, categories, comments
 
@@ -98,19 +96,10 @@ def create_app() -> FastAPI:
     application.include_router(comments.router)
     application.include_router(user_self.router)
 
-    # Serve public thumbnails only. PDFs are streamed via protected endpoints.
-    default_upload_dir = (Path(__file__).resolve().parents[1] / "uploads").resolve()
-    upload_dir = Path(os.getenv("UPLOAD_DIR", str(default_upload_dir)))
-    thumbnails_dir = upload_dir / "thumbnails"
+    # NOTE: All thumbnails are now served from Cloudinary CDN.
+    # Legacy StaticFiles mount for /uploads/thumbnails has been removed.
+    # New uploads automatically use Cloudinary URLs (see routes/documents.py).
     
-    # Create thumbnails directory if it doesn't exist (required for StaticFiles)
-    thumbnails_dir.mkdir(parents=True, exist_ok=True)
-    
-    application.mount(
-        "/uploads/thumbnails",
-        StaticFiles(directory=thumbnails_dir, check_dir=False),
-        name="thumbnails",
-    )
     return application
 
 
