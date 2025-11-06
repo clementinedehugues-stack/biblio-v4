@@ -179,7 +179,7 @@ export default function BooksModeratorPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/book/${book.id}`)}
+                          onClick={() => navigate(`/books/${book.id}`)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           {t('view')}
