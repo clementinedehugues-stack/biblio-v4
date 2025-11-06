@@ -20,6 +20,7 @@ from ..models.document import Document
 from ..models.book import Book
 from ..services import books as books_service
 from ..services import documents as documents_service
+from ..services import cloudinary_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -82,11 +83,12 @@ async def upload_document(
         from io import BytesIO
         file_obj = BytesIO(file_content)
         
-        pdf_public_id, thumbnail_public_id = await documents_service.upload_to_cloudinary(
-            file_obj,
-            book_id,
-            generate_thumbnail=True
-        )
+        # Upload PDF to Cloudinary
+        pdf_public_id = await cloudinary_service.upload_pdf(file_obj, str(book_id))
+        
+        # Upload thumbnail to Cloudinary
+        file_obj.seek(0)  # Reset file pointer
+        thumbnail_public_id = await cloudinary_service.upload_thumbnail(file_obj, str(book_id))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
