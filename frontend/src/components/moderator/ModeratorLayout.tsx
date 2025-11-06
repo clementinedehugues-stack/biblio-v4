@@ -13,6 +13,7 @@ import {
   LogOut,
   User as UserIcon,
   Library,
+  Upload,
 } from 'lucide-react';
 
 type ActiveKey = 'dashboard' | 'books' | 'categories';
@@ -46,6 +47,8 @@ export function ModeratorLayout({ children }: { children: ReactNode }) {
     { key: 'categories' as const, label: t('moderator.categories.title'), icon: Tags, path: '/moderator/categories' },
   ];
 
+  const uploadItem = { key: 'upload' as const, label: t('moderator.upload.title'), path: '/moderator/upload' };
+
   const handleItemClick = (path: string, key: ActiveKey) => {
     setActive(key);
     navigate(path);
@@ -73,6 +76,16 @@ export function ModeratorLayout({ children }: { children: ReactNode }) {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+            {/* Upload Button - Prominent */}
+            <Button
+              variant="default"
+              className="w-full justify-start gap-3 mb-3 bg-green-600 text-white hover:bg-green-700"
+              onClick={() => { navigate(uploadItem.path); setActive('dashboard'); }}
+            >
+              <Upload className="h-5 w-5" />
+              {uploadItem.label}
+            </Button>
+            
             {navItems.map((item) => {
               const isActive = active === item.key;
               return (

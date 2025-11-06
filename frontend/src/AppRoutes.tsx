@@ -22,6 +22,7 @@ const BooksAdminPage = lazy(() => import('./pages/admin/BooksAdminPage'));
 const ModeratorDashboard = lazy(() => import('./pages/moderator/ModeratorDashboard'));
 const BooksModeratorPage = lazy(() => import('./pages/moderator/BooksModeratorPage'));
 const CategoriesModeratorPage = lazy(() => import('./pages/moderator/CategoriesModeratorPage'));
+const UploadModeratorPage = lazy(() => import('./pages/moderator/UploadModeratorPage'));
 
 function PrivateRoute({ children }: { children: ReactElement }) {
   const { token } = useAuth();
@@ -100,6 +101,7 @@ export function AppRoutes() {
           <Route path="/moderator" element={<ModeratorDashboard />} />
           <Route path="/moderator/books" element={<BooksModeratorPage />} />
           <Route path="/moderator/categories" element={<CategoriesModeratorPage />} />
+          <Route path="/moderator/upload" element={<UploadModeratorPage />} />
         </Route>
       </Routes>
     </Suspense>
