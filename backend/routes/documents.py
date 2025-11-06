@@ -78,17 +78,17 @@ async def upload_document(
             detail="Uploaded file exceeds size limit"
         )
     
-    # Upload to Cloudinary
+    # Upload to Cloudinary (PDF + thumbnail)
     try:
         from io import BytesIO
         file_obj = BytesIO(file_content)
-        
-        # Upload PDF to Cloudinary
-        pdf_public_id = cloudinary_service.upload_pdf(file_obj, str(book_id))
-        
-        # Upload thumbnail to Cloudinary
-        file_obj.seek(0)  # Reset file pointer
-        thumbnail_public_id = cloudinary_service.upload_thumbnail(file_obj, str(book_id))
+
+        # Use service helper to handle PDF upload and thumbnail generation properly
+        pdf_public_id, thumbnail_public_id = await documents_service.upload_to_cloudinary(
+            file_obj,
+            book_id,
+            generate_thumbnail=True,
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -128,11 +128,14 @@ async def upload_document(
                 commit=False,
             )
             
-            # Update book with Cloudinary IDs
+            # Update book with Cloudinary IDs and URLs
             book.cloudinary_public_id = pdf_public_id
             if thumbnail_public_id:
                 book.cloudinary_thumbnail_id = thumbnail_public_id
                 book.thumbnail_path = cloudinary_service.get_thumbnail_url(thumbnail_public_id)
+            # Optionally keep pdf_url in sync for any consumers relying on it
+            if pdf_public_id:
+                book.pdf_url = cloudinary_service.get_pdf_url(pdf_public_id)
             
             session.add(book)
     except Exception:

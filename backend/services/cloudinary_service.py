@@ -146,10 +146,10 @@ def stream_pdf(public_id: str) -> bytes:
     Returns:
         PDF file content as bytes
     """
-    import requests
-    
+    import httpx
+
     url = get_pdf_url(public_id)
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    
-    return response.content
+    with httpx.Client() as client:
+        response = client.get(url)
+        response.raise_for_status()
+        return response.content

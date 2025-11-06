@@ -93,52 +93,59 @@ async def create_book_with_file(
     if "pdf" not in content_type:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file must be a PDF")
 
-    # Prepare IDs and storage
+    # Prepare IDs and in-memory buffering for Cloudinary
     book_id = uuid.uuid4()
-    upload_dir = documents_service.get_upload_dir()
     stored_name = documents_service.generate_storage_name(book_id, file.filename or "document.pdf")
-    destination = upload_dir / stored_name
+    base = str(request.base_url).rstrip("/")
 
+    # Read file into memory (bounded) to upload to Cloudinary and also persist temporarily for text extraction
+    from io import BytesIO
+    buffer = BytesIO()
     written = 0
     try:
-        with destination.open("wb") as buffer:
-            while True:
-                chunk = await file.read(_UPLOAD_CHUNK_SIZE)
-                if not chunk:
-                    break
-                written += len(chunk)
-                if written > _MAX_UPLOAD_SIZE:
-                    raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Uploaded file exceeds size limit")
-                buffer.write(chunk)
-    except HTTPException:
-        destination.unlink(missing_ok=True)
-        raise
-    except Exception as exc:
-        destination.unlink(missing_ok=True)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to store uploaded file") from exc
+        while True:
+            chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            written += len(chunk)
+            if written > _MAX_UPLOAD_SIZE:
+                raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Uploaded file exceeds size limit")
+            buffer.write(chunk)
     finally:
         await file.close()
 
+    if written == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty upload")
+
+    # Upload to Cloudinary (PDF + thumbnail)
     try:
+        buffer.seek(0)
+        pdf_public_id, thumbnail_public_id = await documents_service.upload_to_cloudinary(
+            buffer,
+            book_id,
+            generate_thumbnail=True,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to upload to Cloudinary: {str(exc)}") from exc
+
+    # Persist locally only for text extraction, then clean up
+    upload_dir = documents_service.get_upload_dir()
+    destination = upload_dir / stored_name
+    try:
+        buffer.seek(0)
+        with destination.open("wb") as fh:
+            fh.write(buffer.read())
         content_text = documents_service.extract_pdf_text(destination)
     except Exception as exc:
         destination.unlink(missing_ok=True)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to parse PDF content") from exc
+    finally:
+        destination.unlink(missing_ok=True)
 
-    base = str(request.base_url).rstrip("/")
-
-    # Try to generate a thumbnail from first page; non-fatal on failure
-    thumb_dir = documents_service.get_thumbnails_dir()
-    thumb_filename = f"{book_id}_thumb.jpg"
-    thumb_path = thumb_dir / thumb_filename
-    thumbnail_url: str | None = None
-    try:
-        ok = documents_service.generate_pdf_thumbnail(destination, thumb_path)
-        if ok:
-            base = str(request.base_url).rstrip("/")
-            thumbnail_url = f"{base}/uploads/thumbnails/{thumb_filename}"
-    except Exception:
-        thumbnail_url = None
+    # Derive URLs from Cloudinary public IDs
+    from ..services import cloudinary_service
+    pdf_url = cloudinary_service.get_pdf_url(pdf_public_id) if pdf_public_id else f"{base}/uploads/{stored_name}"
+    thumbnail_url = cloudinary_service.get_thumbnail_url(thumbnail_public_id) if thumbnail_public_id else None
 
     try:
         book = Book(
@@ -149,9 +156,12 @@ async def create_book_with_file(
             category=category,
             tags=[],
             language=Language(language),
-            pdf_url=f"{base}/uploads/{stored_name}",
+            pdf_url=pdf_url,
             thumbnail_path=thumbnail_url,
         )
+        # Also attach Cloudinary identifiers for streaming and future operations
+        book.cloudinary_public_id = pdf_public_id
+        book.cloudinary_thumbnail_id = thumbnail_public_id
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid language")
 
@@ -176,8 +186,6 @@ async def create_book_with_file(
             commit=True,
         )
     except Exception:
-        destination.unlink(missing_ok=True)
-        thumb_path.unlink(missing_ok=True)
         raise
 
     await session.refresh(book)
