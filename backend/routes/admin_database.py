@@ -49,8 +49,6 @@ async def reset_database(
         result = await session.execute(delete(Category))
         categories_deleted = result.rowcount
     
-    await session.commit()
-    
     return {
         "message": "Database reset successful",
         "deleted": {
