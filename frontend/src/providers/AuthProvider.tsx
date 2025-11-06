@@ -59,6 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
+    queryClient.clear(); // Clear all query cache to prevent stale admin queries
     queryClient.setQueryData(['user'], null);
     navigate('/login');
   };
