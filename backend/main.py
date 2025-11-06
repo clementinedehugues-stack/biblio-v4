@@ -92,7 +92,7 @@ def create_app() -> FastAPI:
     application.include_router(admin_notifications.router)
     application.include_router(admin_roles.router)
     application.include_router(admin_support.router)
-        application.include_router(admin_database.router)
+    application.include_router(admin_database.router)
     application.include_router(categories.router)
     application.include_router(comments.router)
     application.include_router(user_self.router)
