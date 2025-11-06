@@ -8,11 +8,16 @@ import { Button } from '@/components/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addComment, listComments, type CommentRead } from '@/services/comments';
 import { useState } from 'react';
-import { Star as StarIcon } from 'lucide-react';
+import { Star as StarIcon, BookMarked, BookOpen, BookCheck, Library } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useReadingStatus } from '@/hooks/useReadingStatus';
+import { useShelves } from '@/hooks/useShelves';
 
 export default function BookDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { getReadingStatus, setReadingStatus } = useReadingStatus();
+  const { shelves, addBookToShelf, removeBookFromShelf, getShelvesForBook } = useShelves();
+  const [showShelfMenu, setShowShelfMenu] = useState(false);
 
   const qc = useQueryClient();
   const { data: book, isLoading, isError } = useQuery({
@@ -68,12 +73,83 @@ export default function BookDetailPage() {
                     )}
                   </div>
                 </div>
-                <div className="shrink-0">
+                <div className="shrink-0 space-y-2">
                   <Link to={`/reader/${book.id}`}>
-                    <Button size="lg" className="rounded-full shadow-md" disabled={!book.has_document}>
+                    <Button size="lg" className="rounded-full shadow-md w-full" disabled={!book.has_document}>
                       {t('book.read_now')}
                     </Button>
                   </Link>
+                </div>
+              </div>
+
+              {/* Reading Status Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={getReadingStatus(book.id)?.status === 'to_read' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setReadingStatus(book.id, 'to_read')}
+                  className="flex items-center gap-2"
+                >
+                  <BookMarked className="h-4 w-4" />
+                  {t('library.to_read')}
+                </Button>
+                <Button
+                  variant={getReadingStatus(book.id)?.status === 'reading' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setReadingStatus(book.id, 'reading')}
+                  className="flex items-center gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  {t('library.reading')}
+                </Button>
+                <Button
+                  variant={getReadingStatus(book.id)?.status === 'finished' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setReadingStatus(book.id, 'finished')}
+                  className="flex items-center gap-2"
+                >
+                  <BookCheck className="h-4 w-4" />
+                  {t('library.finished')}
+                </Button>
+                
+                {/* Shelf management */}
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowShelfMenu(!showShelfMenu)}
+                    className="flex items-center gap-2"
+                  >
+                    <Library className="h-4 w-4" />
+                    {t('library.add_to_shelf')} ({getShelvesForBook(book.id).length})
+                  </Button>
+                  {showShelfMenu && (
+                    <div className="absolute top-full left-0 mt-2 w-56 bg-background border rounded-lg shadow-lg p-2 z-10">
+                      {shelves.length === 0 ? (
+                        <div className="text-sm text-muted-foreground p-2">{t('library.no_shelves')}</div>
+                      ) : (
+                        shelves.map((shelf) => {
+                          const isInShelf = shelf.bookIds.includes(book.id);
+                          return (
+                            <button
+                              key={shelf.id}
+                              onClick={() => {
+                                if (isInShelf) {
+                                  removeBookFromShelf(shelf.id, book.id);
+                                } else {
+                                  addBookToShelf(shelf.id, book.id);
+                                }
+                              }}
+                              className="w-full text-left px-3 py-2 rounded hover:bg-accent text-sm flex items-center justify-between"
+                            >
+                              <span>{shelf.name}</span>
+                              {isInShelf && <BookCheck className="h-4 w-4 text-green-500" />}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
