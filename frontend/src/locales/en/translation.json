@@ -155,8 +155,21 @@
   "admin.dashboard.settings_hint": "User profile, language and theme settings are available in the main user interface.",
   "admin.dashboard.toast.regenerating": "Regenerating thumbnails…",
   "admin.dashboard.toast.regenerated_success": "Thumbnails regenerated",
-  "admin.dashboard.toast.regenerated_error": "Failed to regenerate thumbnails"
-,
+  "admin.dashboard.toast.regenerated_error": "Failed to regenerate thumbnails",
+
+  "moderator.dashboard.title": "Moderator Dashboard",
+  "moderator.dashboard.subtitle": "Manage Books & Categories",
+  "moderator.dashboard.description": "Add books, create categories, and help grow the library.",
+  "moderator.total_books": "Total Books",
+  "moderator.total_categories": "Total Categories",
+  "moderator.books.title": "Books",
+  "moderator.books.subtitle": "Manage books in the library",
+  "moderator.books.all_books": "All Books",
+  "moderator.categories.title": "Categories",
+  "moderator.categories.subtitle": "Manage categories",
+  "moderator.categories.all_categories": "All Categories",
+  "moderator.categories.no_categories": "No categories yet.",
+  "moderator.categories.books_count": "books",
 
   "content": "Content",
   "users": "Users",

@@ -156,8 +156,21 @@
   "admin.dashboard.settings_hint": "Les paramètres de profil, de langue et de thème sont disponibles dans l'interface utilisateur principale.",
   "admin.dashboard.toast.regenerating": "Régénération des miniatures…",
   "admin.dashboard.toast.regenerated_success": "Miniatures régénérées",
-  "admin.dashboard.toast.regenerated_error": "Échec de la régénération des miniatures"
-,
+  "admin.dashboard.toast.regenerated_error": "Échec de la régénération des miniatures",
+
+  "moderator.dashboard.title": "Tableau de bord Modérateur",
+  "moderator.dashboard.subtitle": "Gérer les Livres et Catégories",
+  "moderator.dashboard.description": "Ajoutez des livres, créez des catégories et aidez à développer la bibliothèque.",
+  "moderator.total_books": "Total des Livres",
+  "moderator.total_categories": "Total des Catégories",
+  "moderator.books.title": "Livres",
+  "moderator.books.subtitle": "Gérer les livres dans la bibliothèque",
+  "moderator.books.all_books": "Tous les Livres",
+  "moderator.categories.title": "Catégories",
+  "moderator.categories.subtitle": "Gérer les catégories",
+  "moderator.categories.all_categories": "Toutes les Catégories",
+  "moderator.categories.no_categories": "Aucune catégorie pour le moment.",
+  "moderator.categories.books_count": "livres",
 
   "content": "Contenu",
   "users": "Utilisateurs",

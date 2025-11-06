@@ -3,6 +3,7 @@ import { type ReactElement, Suspense, lazy } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { AdminRoute } from './AdminRoute';
+import { ModeratorRoute } from './ModeratorRoute';
 
 // Lazy-loaded pages
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -18,6 +19,9 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const CategoriesPage = lazy(() => import('./pages/admin/CategoriesPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const BooksAdminPage = lazy(() => import('./pages/admin/BooksAdminPage'));
+const ModeratorDashboard = lazy(() => import('./pages/moderator/ModeratorDashboard'));
+const BooksModeratorPage = lazy(() => import('./pages/moderator/BooksModeratorPage'));
+const CategoriesModeratorPage = lazy(() => import('./pages/moderator/CategoriesModeratorPage'));
 
 function PrivateRoute({ children }: { children: ReactElement }) {
   const { token } = useAuth();
@@ -91,6 +95,11 @@ export function AppRoutes() {
           <Route path="/admin/books" element={<BooksAdminPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/categories" element={<CategoriesPage />} />
+        </Route>
+        <Route element={<ModeratorRoute />}>
+          <Route path="/moderator" element={<ModeratorDashboard />} />
+          <Route path="/moderator/books" element={<BooksModeratorPage />} />
+          <Route path="/moderator/categories" element={<CategoriesModeratorPage />} />
         </Route>
       </Routes>
     </Suspense>

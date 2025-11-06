@@ -5,14 +5,19 @@ import UserLayout from "@/components/layout/UserLayout";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const isAdminOrModerator = user?.role === 'admin' || user?.role === 'moderator';
+
+  // Redirect based on user role
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  
+  if (user?.role === 'moderator') {
+    return <Navigate to="/moderator" replace />;
+  }
 
   return (
-    // Redirect admins/moderators to the dedicated Admin interface (/admin)
-    isAdminOrModerator ? <Navigate to="/admin" replace /> : (
-      <UserLayout>
-        <UserHomeCore />
-      </UserLayout>
-    )
+    <UserLayout>
+      <UserHomeCore />
+    </UserLayout>
   );
 }
