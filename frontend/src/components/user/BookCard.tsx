@@ -50,7 +50,7 @@ function BookCardBase({ book, index = 0, density = 'comfortable', viewMode = 'gr
       >
         <div className="flex gap-4 p-4">
           {/* Thumbnail */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {book.thumbnail_path || book.cover_image_url ? (
               <img
                 src={normalizePublicUrl(book.thumbnail_path) || normalizePublicUrl(book.cover_image_url) || (book.thumbnail_path || book.cover_image_url!)}
@@ -59,7 +59,7 @@ function BookCardBase({ book, index = 0, density = 'comfortable', viewMode = 'gr
                 loading="lazy"
               />
             ) : (
-              <div className="h-32 w-24 rounded-lg bg-gradient-to-br from-indigo-600/70 to-fuchsia-600/70 flex items-center justify-center p-2">
+              <div className="h-32 w-24 rounded-lg bg-linear-to-br from-indigo-600/70 to-fuchsia-600/70 flex items-center justify-center p-2">
                 <div className="text-primary-foreground text-xs font-medium text-center line-clamp-3">{book.title}</div>
               </div>
             )}
@@ -84,7 +84,7 @@ function BookCardBase({ book, index = 0, density = 'comfortable', viewMode = 'gr
               {/* Favorite button */}
               <button
                 onClick={() => toggle(book.id)}
-                className={`flex-shrink-0 rounded-full p-2 hover:bg-background/80 transition ${fav ? 'text-yellow-500' : 'text-foreground'}`}
+                className={`shrink-0 rounded-full p-2 hover:bg-background/80 transition ${fav ? 'text-yellow-500' : 'text-foreground'}`}
                 aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
               >
                 <Star className={`h-5 w-5 ${fav ? 'fill-current' : ''}`} />
