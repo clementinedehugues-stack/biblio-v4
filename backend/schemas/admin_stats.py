@@ -29,3 +29,10 @@ class ReportItem(BaseModel):
 class RecentReportsResponse(BaseModel):
     """Response schema for recent reports."""
     reports: List[ReportItem]
+
+
+class CountsResponse(BaseModel):
+    """Aggregated counts for the admin dashboard."""
+    users: int
+    books: int
+    categories: int

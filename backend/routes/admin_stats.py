@@ -14,7 +14,8 @@ from ..dependencies import get_current_admin_user
 from ..models.book import Book
 from ..models.user import User
 from ..models.document import Document
-from ..schemas.admin_stats import TopBooksResponse, ActiveUsersResponse, RecentReportsResponse
+from ..models.category import Category
+from ..schemas.admin_stats import TopBooksResponse, ActiveUsersResponse, RecentReportsResponse, CountsResponse
 
 router = APIRouter(prefix="/admin/stats", tags=["admin-stats"])
 
@@ -96,3 +97,29 @@ async def get_recent_reports(
     # For now, return empty list since we don't have a reports system
     # In a real app, you'd have a reports/issues table
     return RecentReportsResponse(reports=[])
+
+
+@router.get("/counts", response_model=CountsResponse)
+async def get_counts(
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(get_current_admin_user),
+) -> CountsResponse:
+    """Return aggregated counts for users, books and categories.
+
+    This allows the frontend to fetch summary stats in a single request.
+    """
+
+    users_count_result = await session.execute(select(func.count(User.id)))
+    users_count = int(users_count_result.scalar() or 0)
+
+    books_count_result = await session.execute(select(func.count(Book.id)))
+    books_count = int(books_count_result.scalar() or 0)
+
+    categories_count_result = await session.execute(select(func.count(Category.name)))
+    categories_count = int(categories_count_result.scalar() or 0)
+
+    return CountsResponse(
+        users=users_count,
+        books=books_count,
+        categories=categories_count,
+    )

@@ -61,3 +61,14 @@ export async function getRecentReports(): Promise<Report[]> {
   const data = await apiFetch<{ reports: Report[] }>('/admin/stats/recent-reports/');
   return data.reports;
 }
+
+// Aggregated counts for dashboard (users, books, categories)
+export type AdminCounts = {
+  users: number;
+  books: number;
+  categories: number;
+};
+
+export async function fetchAdminCounts(): Promise<AdminCounts> {
+  return await apiFetch<AdminCounts>('/admin/stats/counts/');
+}

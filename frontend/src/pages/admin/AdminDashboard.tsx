@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { getUsers } from '@/services/users';
-import { getBooks } from '@/services/books';
-import { getDocuments } from '@/services/documents';
+// Aggregated counts (users, books, categories)
+// Removed documents counter (replaced by aggregated counts including categories)
+import { fetchAdminCounts } from '@/services/adminStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminLayout from '@/components/admin/AdminLayout';
-import type { User as AppUser } from '@/types/user';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, FileText, Users } from 'lucide-react';
+import { BookOpen, Users, Tags } from 'lucide-react';
 import AdminStatsWidgets from '@/components/admin/AdminStatsWidgets';
 import Tabs from '@/components/ui/Tabs';
 import AdminNotifications from '@/components/admin/AdminNotifications';
@@ -15,14 +14,13 @@ import AdminRoles from '@/components/admin/AdminRoles';
 import AdminSupport from '@/components/admin/AdminSupport';
 
 
-type AdminBook = { id: string };
-
 export function AdminDashboard() {
   const { t } = useTranslation();
 
-  const { data: users } = useQuery<AppUser[]>({ queryKey: ['users'], queryFn: getUsers });
-  const { data: books } = useQuery<AdminBook[]>({ queryKey: ['books'], queryFn: () => getBooks() });
-  const { data: documents } = useQuery({ queryKey: ['documents'], queryFn: getDocuments });
+  const { data: counts } = useQuery<{ users: number; books: number; categories: number }>({
+    queryKey: ['admin-counts'],
+    queryFn: fetchAdminCounts,
+  });
   // regenMutation supprimé (maintenance déplacée)
 
   // No local UI state needed on this page
@@ -61,9 +59,9 @@ export function AdminDashboard() {
                 label: 'Statistiques',
                 content: <>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <StatCard label={t('total_users')} value={users?.length || 0} Icon={Users} />
-                    <StatCard label={t('total_books')} value={books?.length || 0} Icon={BookOpen} />
-                    <StatCard label={t('total_documents')} value={documents?.length || 0} Icon={FileText} />
+                    <StatCard label={t('total_users')} value={counts?.users ?? 0} Icon={Users} />
+                    <StatCard label={t('total_books')} value={counts?.books ?? 0} Icon={BookOpen} />
+                    <StatCard label={t('total_categories')} value={counts?.categories ?? 0} Icon={Tags} />
                   </div>
                   <AdminStatsWidgets />
                 </>

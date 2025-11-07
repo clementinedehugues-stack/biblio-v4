@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getBook } from '@/services/books';
 import { PdfViewer } from '@/components/common/PdfViewer';
@@ -9,13 +9,16 @@ import { useState } from 'react';
 
 export default function ReaderPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { data: book, isLoading, isError } = useQuery({
-    queryKey: ['book', id],
+    queryKey: ['book', id, 'reader'],
     queryFn: () => getBook(id as string),
     enabled: !!id,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const toggleFullscreen = () => {
@@ -51,7 +54,12 @@ export default function ReaderPage() {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading && <div className="text-center text-muted-foreground py-10">{t('reader.loading')}</div>}
-        {isError && <div className="text-center text-destructive bg-destructive/10 p-4 rounded-lg">{t('reader.error')}</div>}
+        {isError && (
+          <div className="text-center text-destructive bg-destructive/10 p-4 rounded-lg space-y-3">
+            <div>{t('reader.error') || 'Document introuvable ou supprimé.'}</div>
+            <Button variant="outline" onClick={() => navigate('/')}>{t('back_home') || 'Retour accueil'}</Button>
+          </div>
+        )}
         {book && book.has_document && (
           <div className="rounded-xl overflow-hidden border shadow-lg">
             <PdfViewer bookId={book.id} streamPath={book.stream_endpoint ?? undefined} />

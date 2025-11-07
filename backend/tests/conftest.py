@@ -8,16 +8,19 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from backend.database import get_session
-from backend.main import create_app
-from backend.models.base import Base
-
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest_asyncio.fixture()
 async def app():
     os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
+    # Cloudinary required settings for app startup; use dummy values in tests
+    os.environ.setdefault("CLOUDINARY_CLOUD_NAME", "dummy")
+    os.environ.setdefault("CLOUDINARY_API_KEY", "dummy")
+    os.environ.setdefault("CLOUDINARY_API_SECRET", "dummy")
+
+    # Import application modules after environment is configured
+    from backend.models.base import Base
 
     engine = create_async_engine(
         TEST_DATABASE_URL,
@@ -37,6 +40,8 @@ async def app():
         class_=AsyncSession,
     )
 
+    from backend.main import create_app
+    from backend.database import get_session
     application = create_app()
 
     async def _get_test_session() -> AsyncGenerator[AsyncSession, None]:
