@@ -13,16 +13,17 @@ Ce guide explique comment basculer la base PostgreSQL hébergée sur Render vers
 
 Neon fournit plusieurs URLs :
 
-- Direct (sans pooler) : `postgresql://<user>:<password>@<host>/<db>`
-- Pooler (recommandé en prod) : `postgresql://<user>:<password>@<pooler-host>/<db>`
 
 Pour notre backend (SQLAlchemy + asyncpg), gardez le driver asynchrone et forcez SSL :
 
 ```
-DATABASE_URL=postgresql+asyncpg://<user>:<password>@<host>/<db>?sslmode=require
+DATABASE_URL=postgresql+asyncpg://<user>:<password>@<host>/<db>?ssl=true
 ```
 
 Remplacez `<host>` par le host Neon (pooler ou direct). Sur Render, définissez cette variable dans `render.yaml` ou via le dashboard.
+Important (asyncpg) :
+- `sslmode=require` est un paramètre libpq/psycopg. Avec `asyncpg`, utilisez plutôt `ssl=true`.
+- Les paramètres libpq comme `channel_binding=require` ne sont pas pris en charge par `asyncpg` et doivent être retirés.
 
 ## 2) Importer les données dans Neon
 

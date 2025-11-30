@@ -54,10 +54,14 @@ def _load_settings() -> Settings:
 				ssl_present = False
 				for kv in query.split("&"):
 					k, _, v = kv.partition("=")
-					if k == "sslmode":
+					k_lower = k.lower()
+					if k_lower == "sslmode":
 						# asyncpg doesn't accept sslmode; translate require -> ssl=true
 						ssl_present = True
 						continue  # drop sslmode from query
+					# asyncpg doesn't accept libpq-only args like channel_binding; drop them
+					if k_lower == "channel_binding":
+						continue
 					parts.append(kv)
 				if ssl_present:
 					parts.append("ssl=true")
