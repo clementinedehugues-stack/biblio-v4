@@ -31,6 +31,16 @@ def _load_settings() -> Settings:
 		"DATABASE_URL",
 		"postgresql+asyncpg://postgres:postgres@localhost:5432/biblio",
 	)
+	# Sanitize common copy/paste mistakes (e.g. setting env var to: psql 'postgresql://...')
+	raw_db_url = raw_db_url.strip()
+	if raw_db_url.startswith("psql "):
+		# Remove leading CLI command part
+		raw_db_url = raw_db_url[5:].strip()
+	# Strip surrounding single or double quotes if present
+	if (raw_db_url.startswith("'") and raw_db_url.endswith("'")) or (
+		raw_db_url.startswith('"') and raw_db_url.endswith('"')
+	):
+		raw_db_url = raw_db_url[1:-1].strip()
 	if raw_db_url.startswith("postgresql://") and "+asyncpg" not in raw_db_url:
 		raw_db_url = raw_db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 

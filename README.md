@@ -91,6 +91,7 @@ npm run dev
 - **Scripts** : Voir [SCRIPTS_README.md](SCRIPTS_README.md) pour l'utilisation détaillée des scripts
 - **Backend** : Voir [backend/README.md](backend/README.md)
 - **Frontend** : Voir [frontend/README.md](frontend/README.md)
+- **Migration DB (Neon)** : Voir [docs/NEON_MIGRATION.md](docs/NEON_MIGRATION.md)
 
 ## 🐛 Dépannage
 

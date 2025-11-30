@@ -250,6 +250,19 @@ docker run -e DATABASE_URL=... -p 8000:8000 biblio-backend
 
 ```env
 DATABASE_URL=postgresql+asyncpg://user:password@host:5432/dbname
+
+## Utiliser Neon (hébergement PostgreSQL)
+
+Le projet supporte Neon nativement. Configurez simplement `DATABASE_URL` avec l'URL Neon et ajoutez `?sslmode=require` :
+
+```
+DATABASE_URL=postgresql+asyncpg://<user>:<password>@<host>/<db>?sslmode=require
+```
+
+Recommandations :
+- Utilisez le host du pooler Neon en production pour optimiser les connexions.
+- Les migrations Alembic retireront automatiquement `+asyncpg` pour exécuter côté serveur.
+- Si vous migrez des données depuis Render, suivez `docs/NEON_MIGRATION.md`.
 JWT_SECRET_KEY=secure-random-key-256-bits
 UPLOAD_DIR=/app/uploads
 PUBLIC_API_BASE_URL=https://your-domain.com/api
