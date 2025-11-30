@@ -14,7 +14,7 @@ WORKSPACE_ROOT = PROJECT_ROOT.parent
 if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.append(str(WORKSPACE_ROOT))
 
-from backend.core.config import settings  # noqa: E402
+from backend.core.config import settings, _mask_dsn  # noqa: E402
 from backend.models import Base  # noqa: E402
 
 
@@ -25,6 +25,7 @@ if config.config_file_name is not None:
 
 database_url = settings.database_url
 config.set_main_option("sqlalchemy.url", database_url)
+print("[Alembic] Using database URL:", _mask_dsn(database_url))
 
 target_metadata = Base.metadata
 

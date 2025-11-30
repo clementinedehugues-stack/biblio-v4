@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
+from urllib.parse import urlsplit, urlunsplit
 
 
 @dataclass(frozen=True)
@@ -48,27 +49,29 @@ def _load_settings() -> Settings:
 	if "+asyncpg://" in raw_db_url:
 		# Split URL to manipulate query params safely
 		try:
-			base, _, query = raw_db_url.partition("?")
+			parsed = urlsplit(raw_db_url)
+			query = parsed.query
 			if query:
 				parts = []
 				ssl_present = False
 				for kv in query.split("&"):
+					if not kv:
+						continue
 					k, _, v = kv.partition("=")
 					k_lower = k.lower()
 					if k_lower == "sslmode":
-						# asyncpg doesn't accept sslmode; translate require -> ssl=true
+						# Drop sslmode for asyncpg; we'll add ssl=true instead
 						ssl_present = True
-						continue  # drop sslmode from query
-					# asyncpg doesn't accept libpq-only args like channel_binding; drop them
+						continue
 					if k_lower == "channel_binding":
+						# Not supported by asyncpg
 						continue
 					parts.append(kv)
-				if ssl_present:
+				if ssl_present and all(not p.lower().startswith("ssl=") for p in parts):
 					parts.append("ssl=true")
-				new_query = "&".join(p for p in parts if p)
-				raw_db_url = base + ("?" + new_query if new_query else "")
+				new_query = "&".join(parts)
+				raw_db_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, new_query, parsed.fragment))
 		except Exception:
-			# If anything goes wrong, leave raw_db_url as-is; asyncpg often defaults to SSL on Neon
 			pass
 
 	secret = os.getenv("JWT_SECRET_KEY")
@@ -96,6 +99,20 @@ def _load_settings() -> Settings:
 		cloudinary_api_key=cloudinary_api_key,
 		cloudinary_api_secret=cloudinary_api_secret,
 	)
+
+
+def _mask_dsn(url: str) -> str:
+	"""Mask password in DSN for safe logging."""
+	try:
+		parsed = urlsplit(url)
+		if "@" in parsed.netloc and ":" in parsed.netloc.split("@", 1)[0]:
+			userinfo, hostpart = parsed.netloc.split("@", 1)
+			user, _, _ = userinfo.partition(":")
+			masked = f"{user}:***@{hostpart}"
+			return urlunsplit((parsed.scheme, masked, parsed.path, parsed.query, parsed.fragment))
+		return url
+	except Exception:
+		return url
 
 
 @lru_cache()
