@@ -44,6 +44,29 @@ def _load_settings() -> Settings:
 	if raw_db_url.startswith("postgresql://") and "+asyncpg" not in raw_db_url:
 		raw_db_url = raw_db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+	# If using asyncpg, map sslmode=require to asyncpg-compatible parameter
+	if "+asyncpg://" in raw_db_url:
+		# Split URL to manipulate query params safely
+		try:
+			base, _, query = raw_db_url.partition("?")
+			if query:
+				parts = []
+				ssl_present = False
+				for kv in query.split("&"):
+					k, _, v = kv.partition("=")
+					if k == "sslmode":
+						# asyncpg doesn't accept sslmode; translate require -> ssl=true
+						ssl_present = True
+						continue  # drop sslmode from query
+					parts.append(kv)
+				if ssl_present:
+					parts.append("ssl=true")
+				new_query = "&".join(p for p in parts if p)
+				raw_db_url = base + ("?" + new_query if new_query else "")
+		except Exception:
+			# If anything goes wrong, leave raw_db_url as-is; asyncpg often defaults to SSL on Neon
+			pass
+
 	secret = os.getenv("JWT_SECRET_KEY")
 	if not secret:
 		raise RuntimeError("JWT_SECRET_KEY must be set")
